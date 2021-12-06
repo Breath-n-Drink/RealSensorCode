@@ -1,18 +1,24 @@
 import smbus
 import time
 from socket import *
+# import keyboard
 
 # for RPI version 1, use "bus = smbus.SMBus(0)"
 bus = smbus.SMBus(1)
+
+#declaring it global so that it can be modified from function
+# global releaseListening
+# keepListening = True
 
 BROADCAST_TO_PORT = 22392
 
 # check your PCF8591 address by type in 'sudo i2cdetect -y -1' in terminal.
 
+# keyboard.on_press(key_press)
+
 def setup(Addr):
     global address
     address = Addr
-
 
 def read(chn):  # channel
     if chn == 0:
@@ -35,16 +41,22 @@ def read(chn):  # channel
         bus.write_byte(address, 0x47)
     return bus.read_byte(address)
 
+# def key_press(key):
+#   print(key.name)
 
-if __name__ == "__main__":
+def measurement():
     setup(0x48)
     udpSocket = socket(AF_INET, SOCK_DGRAM)
     udpSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-    while True:
+
+    bacList = []
+    for n in range(0, 5):
         val = read(1)
         print("Raw value from ADC: ", val)
 
-        if val == 0:  # Avoid div by zero
+        val = val - 20
+        
+        if val <= 0:  # Avoid div by zero
             val = 1
 
         resSensor = 20000*(5.00-(val*5.00/1024.0))/(val*5.00/1024.0) # Measured resistance of sensor
@@ -59,10 +71,33 @@ if __name__ == "__main__":
 
         print("mg/L: ", mgPerL)
 
-        bAC = mgPerL / airGPerL
+        bac = mgPerL / airGPerL
 
-        print("BAC permille: ", bAC)
+        print("BAC permille: ", bac)
 
-        udpSocket.sendto(bytes(str(bAC), "UTF-8"), ('<broadcast>', BROADCAST_TO_PORT))
+        bacList.append(bac)
 
         time.sleep(1.0)
+
+    sum = 0.0
+    for i in bacList:
+        sum += i
+    
+    bacAverage = sum / len(bacList)
+
+    print("BAC average: ", bacAverage)
+    
+    udpSocket.sendto(bytes(str(bacAverage), "UTF-8"), ('<broadcast>', BROADCAST_TO_PORT))
+
+if __name__ == "__main__":
+    print("Get ready to blow!")
+    time.sleep(1)
+    print("3")
+    time.sleep(1)
+    print("2")
+    time.sleep(1)
+    print("1")
+    time.sleep(1)
+    print("Blow!")
+    time.sleep(1)
+    measurement()
