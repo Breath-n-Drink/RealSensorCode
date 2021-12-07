@@ -55,11 +55,11 @@ def measurement():
         print("Raw value from ADC: ", val)
 
         val = val - 20
-        
+
         if val <= 0:  # Avoid div by zero
             val = 1
 
-        resSensor = 20000*(5.00-(val*5.00/1024.0))/(val*5.00/1024.0) # Measured resistance of sensor
+        resSensor = 10000*(4.00-(val*4.00/1024.0))/(val*4.00/1024.0) # Measured resistance of sensor
         resOriginal = 200000 # Resistance of sensor in normal air (no alcohol)
 
         ratio = resSensor/resOriginal
@@ -80,10 +80,16 @@ def measurement():
         time.sleep(1.0)
 
     sum = 0.0
+    highest = 0.0
+    lowest = 1000.0
     for i in bacList:
+        if i < lowest:
+            lowest = i
+        if i > highest:
+            highest = i
         sum += i
     
-    bacAverage = sum / len(bacList)
+    bacAverage = (sum - highest - lowest) / (len(bacList) - 2)
 
     print("BAC average: ", bacAverage)
     
